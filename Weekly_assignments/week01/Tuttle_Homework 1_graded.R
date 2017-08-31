@@ -3,7 +3,7 @@
 
 #Name: Matthew Tuttle
 
-
+Grade <- "6/6" # Nice job, 
 #1. Assign to a vector called X the values 1,3,5,6,7, and 9. Assign to a vector called Y the values 2,7,4,5,2 and 12.
 
 X <- c(1,3,5,6,7,9)
