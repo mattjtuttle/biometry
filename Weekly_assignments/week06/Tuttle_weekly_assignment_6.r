@@ -30,7 +30,7 @@ lower <- conf.interval[1]
 upper <- conf.interval[2]
 
 
-#4. Build a general linear model of the data where proficency score predicts brain matter. Which factor is all of the error      confined to?
+#4. Build a general linear model of the data where proficency score predicts brain matter. Which factor is all of the error confined to?
 
 hist(SL.prof)
 hist(GM.density)
@@ -40,7 +40,7 @@ normalTest(GM.density, method = "da")
 
 model <- lm(GM.density~SL.prof)
 
-# All of the error is confined to the measurement of grey matter density since one of the assumptions of a linear model is that the explanatory variable (in this case second language proficiency) is measured without error.
+# All of the error is confined to the uncertainty in our prediction of grey matter density. That is, the part of grey matter density our model fails to explain given that our R-squared is less than one.
 
 
 #5. Theory predicts that the slope should be 0.04. Test this statistical hypothesis.
