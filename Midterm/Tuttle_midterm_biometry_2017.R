@@ -11,17 +11,36 @@ egg.mass<-c(3.1, 4.6, 3.9, 3.4, 3.6, 3.7, 3.8, 4.6, 4.7, 4.3, 2.6, 6, 4.7, 3.4, 
 
 #A.  Based upon our parameter estimates for a normal distribution, what is the equal tailed 95% interval for any sample drawn from this population (i.e., that is the expected range of 95% of our sample)?
 
+expected.range <- quantile(egg.mass, c(0.025, 0.975))
 
+  
 #B. What is the equal tailed 95% interval for OUR sample?
+
+mean.egg.mass <- mean(egg.mass)
+sd.egg.mass <- sd(egg.mass)
+
+upper.range <- mean.egg.mass-qnorm(0.025)*sd.egg.mass
+lower.range <- mean.egg.mass+qnorm(0.025)*sd.egg.mass
 
 
 #C. If we were to sample this population tens of thousands of times, what is the expected standard deviation of the means?
 
+# The expected standard deviation of the means would be 1 since the data should be normally distributed.
+
 
 #D. Calculate the 95% confidence interval
 
+n <- length(egg.mass)
+std.error <- sd.egg.mass/sqrt(n)
+the.CI <- qt(0.975, df = n-1) * std.error
+
+lower.CI <- mean.egg.mass - the.CI
+upper.CI <- mean.egg.mass + the.CI
+
 
 #E. Based on our parameter estimates, what is the probability that a sampled egg from the population has an egg mass equal to or less than 3.3
+
+prob3.3 <- pnorm(3.3, mean = mean.egg.mass, sd = sd.egg.mass, lower.tail = TRUE)
 
 
 ##################################################################
@@ -32,11 +51,22 @@ tunicates<-c(13,9,7,4,5,9,5,4,5,6,8,8,6,9,9,5,8,5,6,7,14,9,3,13,9,5,8,4,5,3,6,9,
 
 #A.  What is an appropriate distribution to use to model this data?
 
+# An appropriate distribution for modeling this data is the Poisson distribution since the tunicate data is count data and therefore a discrete distribution should be used over a continuous one. Additionally, the Poisson distribution does not require a set number of trials and is bound from 0 to infinity, both of which fit well with this dataset.
+
+# Test showing that this data fits a Poisson distribution well
+library(vcd)
+gf <- goodfit(tunicates, type = "poisson")
+summary(gf)
+
 
 #B.  What is/are the parameter estimate(s) for this distribution?
 
+# The parameter estimate for this distribution is lambda, known as the rate parameter. The maximum likelihood estimate of this parameter is the mean of all observations.
+
 
 #C.  What is the probability that your next quadrate will have 3 or fewer tunicates?
+
+prob.3.fewer <- ppois(3, lambda = mean(tunicates), lower.tail = TRUE)
 
 
 #D.  What is the probability that your next quadrate will have 9 or greater tunicates?
