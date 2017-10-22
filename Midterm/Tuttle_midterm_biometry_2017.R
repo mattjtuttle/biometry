@@ -34,8 +34,8 @@ n <- length(egg.mass)
 std.error <- sd.egg.mass/sqrt(n)
 the.CI <- qt(0.975, df = n-1) * std.error
 
-lower.CI <- mean.egg.mass - the.CI
-upper.CI <- mean.egg.mass + the.CI
+lower.95.CI <- mean.egg.mass - the.CI
+upper.95.CI <- mean.egg.mass + the.CI
 
 
 #E. Based on our parameter estimates, what is the probability that a sampled egg from the population has an egg mass equal to or less than 3.3
@@ -71,12 +71,24 @@ prob.3.fewer <- ppois(3, lambda = mean(tunicates), lower.tail = TRUE)
 
 #D.  What is the probability that your next quadrate will have 9 or greater tunicates?
 
+prob.9.greater <- ppois(8, lambda = mean(tunicates), lower.tail = FALSE)
+
 
 #E.  Based on our parameter estimates, what is the probability that a quadrat has BETWEEN 3 and 6 tunicates?
+
+prob.between <- dpois(4, lambda = mean(tunicates)) + dpois(5, lambda = mean(tunicates)) # Probability exclusive of the values 3 and 6, therefore only the densities at 4 and 5 are included
+
 
 #######################################################
 
 #3. Suppose 0.5% of all students seeking treatment at a school infirmary are eventually diagnosed as having mononucleosis.  Of those who do have mono, 90% complain of a sore throat.  But 30% of those who do not have mono also claim to have sore throats.  If a student comes to the infirmary and says he or she has a sore throat, what is the probability the student has mono?
+
+prior <- 0.005 # 0.5% of students seeking treatment have mono
+likelihood <- 0.9 # 90% with mono complain of sore throat
+no.mono.sore <- 0.3 # 30% of students without mono that have sore throats
+observed <- (likelihood * prior) + (no.mono.sore * (1 - prior)) # Probability of the data
+
+prob.mono <- (likelihood * prior) / observed # Probability a student with a sore throat has mono
 
 
 ######################################################
@@ -88,17 +100,36 @@ gill.raker.length.mm<-c(250.7, 230, 257.6, 241.2, 247.7, 252, 251.5, 261.5, 242.
 
 #A.  What is the pearson-product moment correlation for these data?
 
+pearson.cor <- cor(gape.cm, gill.raker.length.mm, method = c("pearson"))
+
 
 #B.  What is the 99% confidence interval around this correlation?
+
+n <- length(gape.cm)
+z.pearson.cor <- 0.5 * log((1 + pearson.cor) / (1 - pearson.cor)) # Fisher's r-z transformation
+z.se <- sqrt(1 / (n - 3))
+
+upper.z.CI <- z.pearson.cor + qt(0.995, n - 2) * z.se
+lower.z.CI <- z.pearson.cor + qt(0.005, n - 2) * z.se
+
+# Backtransformed 99% confidence interval
+upper.99.CI <- (exp(2 * upper.z.CI) - 1) / (exp(2 * upper.z.CI) + 1)
+lower.99.CI <- (exp(2 * lower.z.CI) - 1) / (exp(2 * lower.z.CI) + 1)
 
 
 #C.  What units are correlation in?
 
+# Correlation is dimensionless given that the data is z-transformed when calculating correlation.
+
 
 #D.  What is the covariance between these two?
 
+covariance <- cov(gape.cm, gill.raker.length.mm, method = c("pearson"))
+
 
 #E.  What units are this covariance in?
+
+# The units of this covariance are cm gape * mm gill raker length. This is because you multiply the units of your variables together when you are calculate the covariance. This value is therefore sensitive to the starting units you use when calculating the covariance. Correlation on the other hand is not, as it standardizes values via z-transformation. If we were to z-transform our data and then calculate the covariance, we would see that the covariance of our z-transformed data is equal to the correlation.
 
 
 ##################################################################
@@ -111,14 +142,60 @@ nectar.ul <- c(132.6,125.66,133.99,129.78,124.59,131.93,131.49,131.95,130.88,129
 lesions <- c(51,17,25,28,29,22,33,50,38,17,38,15,5,29,44,22,46,28,29,32,17,20,42,46,19,27,33,16,44,45,16,49,40,30,21,25,28,43,25,27,36,31,8,19,33,34,30,33,45,34,19,22,34,23,36,19,33,18,34,28,57,7,30,13,36,37,32,31,31,35,45,29,42,47,30,27,13,41,21,36,8,39,22,20,42,33,30,34,23,42,22,27,35,25,31,16,22,30,37,23)
 
 
+# Generates a linear model looking at volume of nectar as a function of lesions
+model <- lm(nectar.ul ~ lesions)
+
+# Calculates 95% confidence interval around fitted values
+summary(lesions)
+pred.frame <- data.frame(lesions = seq(from = 0, to = 60, length = 200))
+pred.conf <- predict(model, interval = "confidence", newdata = pred.frame)
+cbind(pred.frame, pred.conf)
+
+# Makes a pretty figure
+plot(x = lesions,
+     y = nectar.ul,
+     pch = 16,
+     col="darkgrey",
+     xlab="Number of lesions",
+     ylab="Volume of nectar (uL)",
+     las=1,
+     main="Nectar volume increases as number of lesions increases",
+     cex.lab=1.5, #Make our axis labels larger.
+     cex.axis=1.2  # Good for now. Lets add the lines requested in the question
+     )
+abline(model)
+matlines(pred.frame, pred.conf, lwd = 2, lty = c(1,2,2), col = c("black", "red", "red"))
+
+
 #B. Use an anova to test the null hypothesis that the slope is different from zero.
+
+anova.test <- anova(model)
+prob.not.zero <- anova.test$`Pr(>F)`[1]
+
+# Given that the probability of the slope being different from zero is greater than 0.05, we fail to reject our null hypothesis. Therefore, we accept that the slope is equal to zero, assuming that we are interested at looking at our data at the 95% confidence level with a strict p-value cut off of 0.05.
+
+# Calculates p-value by hand
+summary(model)
+theta <- 0
+slope <- model$coefficients[2]
+slope.err <- 0.02793 # pulled value from model summary
+t.slope <- (slope - theta) / slope.err
+by.hand.prob.not.zero <- pt(q = t.slope, df = (length(nectar.ul) - 2), lower.tail = FALSE) * 2
 
 
 #C. Theory predicts that nectar volume should INCREASE as the number of lesions increases. Test this hypothesis.
 
+# One-tailed t-test used to calculate p-value in one direction to see if the slope is greater than zero.
+prob.pos.relationship <- pt(q = t.slope, df = (length(nectar.ul) - 2), lower.tail = FALSE) 
+
+# Given that the p-value is less than 0.05, this indicates that the slope is greater than zero. This means that as theory predicts, nectar volume increases as the number of lesions increases. However, given that we failed to reject our null hypothesis in part B, the appropriateness of using this one-tailed t-test to calculate this p-value is questionable.
 
 
 #D.  Based on your parameter estimates, what is the 95% confidence interval around the fitted values of a plant with 62 lesions? 
+
+lesions.95.CI <- predict(model, interval = "confidence", newdata = data.frame(lesions = 62))
+lesions.lower.95.CI <- lesions.95.CI[2]
+lesions.upper.95.CI <- lesions.95.CI[3]
 
 
 ##################################################################
@@ -142,12 +219,23 @@ LAR<-c(31.51,18.5,20.88,17.67,18.72,24.11,21.39,2.71,18.39,23.27,25.17,15.52,28.
 
 
 
-#Given the data y below, what is the probability AND log likelihood that the data are drawn from the following distributions?
+#7. Given the data y below, what is the probability AND log likelihood that the data are drawn from the following distributions?
 
 y<-c(1.2,3.4,4.4,5.2)
 
+log.y <- log(y)
+
 #A. A normal distribution with a mean of 2 and standard deviation of 3.
+
+# logLik(), maximum likelihood estimate = log-likelihood
+
+prob.dist.A <- dnorm(log.y, mean = 2, sd = 3)
+sum.A <- sum(prob.dist.A)
+
 #B. A normal distribution with a mean of 3 and a standard deviation of 1.
+
+prob.dist.B <- dnorm(log.y, mean = 3, sd = 1)
+sum.B <- sum(prob.dist.B)
 
 #What is the probability and log likelihood of the data based on the maximum likelihood estimate of the mean and standard deviation?
 
