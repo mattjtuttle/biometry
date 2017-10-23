@@ -30,9 +30,9 @@ lower.range <- mean.egg.mass+qnorm(0.025)*sd.egg.mass
 
 #D. Calculate the 95% confidence interval
 
-n <- length(egg.mass)
-std.error <- sd.egg.mass/sqrt(n)
-the.CI <- qt(0.975, df = n-1) * std.error
+n.egg.mass <- length(egg.mass)
+std.error <- sd.egg.mass/sqrt(n.egg.mass)
+the.CI <- qt(0.975, df = n.egg.mass-1) * std.error
 
 lower.95.CI <- mean.egg.mass - the.CI
 upper.95.CI <- mean.egg.mass + the.CI
@@ -105,12 +105,12 @@ pearson.cor <- cor(gape.cm, gill.raker.length.mm, method = c("pearson"))
 
 #B.  What is the 99% confidence interval around this correlation?
 
-n <- length(gape.cm)
+n.gape <- length(gape.cm)
 z.pearson.cor <- 0.5 * log((1 + pearson.cor) / (1 - pearson.cor)) # Fisher's r-z transformation
-z.se <- sqrt(1 / (n - 3))
+z.se <- sqrt(1 / (n.gape - 3))
 
-upper.z.CI <- z.pearson.cor + qt(0.995, n - 2) * z.se
-lower.z.CI <- z.pearson.cor + qt(0.005, n - 2) * z.se
+upper.z.CI <- z.pearson.cor + qt(0.995, n.gape - 2) * z.se
+lower.z.CI <- z.pearson.cor + qt(0.005, n.gape - 2) * z.se
 
 # Backtransformed 99% confidence interval
 upper.99.CI <- (exp(2 * upper.z.CI) - 1) / (exp(2 * upper.z.CI) + 1)
@@ -160,8 +160,8 @@ plot(x = lesions,
      ylab="Volume of nectar (uL)",
      las=1,
      main="Nectar volume increases as number of lesions increases",
-     cex.lab=1.5, #Make our axis labels larger.
-     cex.axis=1.2  # Good for now. Lets add the lines requested in the question
+     cex.lab=1.5,
+     cex.axis=1.2
      )
 abline(model)
 matlines(pred.frame, pred.conf, lwd = 2, lty = c(1,2,2), col = c("black", "red", "red"))
@@ -174,7 +174,7 @@ prob.not.zero <- anova.test$`Pr(>F)`[1]
 
 # Given that the probability of the slope being different from zero is greater than 0.05, we fail to reject our null hypothesis. Therefore, we accept that the slope is equal to zero, assuming that we are interested at looking at our data at the 95% confidence level with a strict p-value cut off of 0.05.
 
-# Calculates p-value by hand
+# p-value can also be calculated by hand
 summary(model)
 theta <- 0
 slope <- model$coefficients[2]
@@ -211,8 +211,59 @@ LAR<-c(31.51,18.5,20.88,17.67,18.72,24.11,21.39,2.71,18.39,23.27,25.17,15.52,28.
 
 #A. Given the data above of average leaf area removed (mm^2) by caterpillars (LAR), what is the best predictive model of leaf area removed based on the available data?
 
+# Testing for normality
+hist(leaf.glucosinolate)
+hist(leaf.thickness)
+hist(isothiocyanates)
+hist(LAR)
+
+library(fBasics)
+normalTest(leaf.glucosinolate, method = "da") # Is normal
+normalTest(leaf.thickness, method = "da") # Is normal
+normalTest(isothiocyanates, method = "da") # Is normal
+normalTest(LAR, method = "da") # Is normal
+
+# Building models
+model1.1 <- lm(LAR ~ leaf.glucosinolate)
+model1.2 <- lm(LAR ~ leaf.thickness)
+model1.3 <- lm(LAR ~ isothiocyanates)
+model2.1 <- lm(LAR ~ leaf.glucosinolate + leaf.thickness)
+model2.2 <- lm(LAR ~ leaf.glucosinolate + isothiocyanates)
+model2.3 <- lm(LAR ~ leaf.thickness + isothiocyanates)
+model3.1 <- lm(LAR ~ leaf.glucosinolate + leaf.thickness + isothiocyanates)
+
+# Correlations
+x1x2 <- cor(leaf.glucosinolate, leaf.thickness)
+x1x3 <- cor(leaf.glucosinolate, isothiocyanates)
+x1y1 <- cor(leaf.glucosinolate, LAR)
+x2x3 <- cor(leaf.thickness, isothiocyanates)
+x2y1 <- cor(leaf.thickness, LAR)
+x3y1 <- cor(isothiocyanates, LAR)
+
+# Summaries
+summary(model1.1)
+summary(model1.2)
+summary(model1.3)
+summary(model2.1)
+summary(model2.2)
+summary(model2.3)
+summary(model3.1)
+
+
+library(car)
+
+anova(model1.1)
+Anova(model1.1)
+
+
 
 #B. Based on your model, what is the most important predictor for leaf area removed (and on what do you base this)?
+
+# isothiocyanates is the best predictor. Easily seen with graph, p-values are highly significant
+
+
+
+
 
 
 #################################################
@@ -223,20 +274,23 @@ LAR<-c(31.51,18.5,20.88,17.67,18.72,24.11,21.39,2.71,18.39,23.27,25.17,15.52,28.
 
 y<-c(1.2,3.4,4.4,5.2)
 
-log.y <- log(y)
-
 #A. A normal distribution with a mean of 2 and standard deviation of 3.
 
-# logLik(), maximum likelihood estimate = log-likelihood
+dist.A.probs <- dnorm(y, mean = 2, sd = 3)
+log.lik.dist.A <- sum(log(dist.A.probs)) # log likelihood drawn from this distribution
+prob.dist.A <- exp(log.lik.dist.A) # probability drawn from this distribution
 
-prob.dist.A <- dnorm(log.y, mean = 2, sd = 3)
-sum.A <- sum(prob.dist.A)
 
 #B. A normal distribution with a mean of 3 and a standard deviation of 1.
 
-prob.dist.B <- dnorm(log.y, mean = 3, sd = 1)
-sum.B <- sum(prob.dist.B)
+dist.B.probs <- dnorm(y, mean = 3, sd = 1)
+log.lik.dist.B <- sum(log(dist.B.probs)) # log likelihood drawn from this distribution
+prob.dist.B <- exp(log.lik.dist.B) # probability drawn from this distribution
 
-#What is the probability and log likelihood of the data based on the maximum likelihood estimate of the mean and standard deviation?
 
+#C. What is the probability and log likelihood of the data based on the maximum likelihood estimate of the mean and standard deviation?
+
+dist.MLE.probs <- dnorm(y, mean = mean(y), sd = sd(y))
+log.lik.dist.MLE <- sum(log(dist.MLE.probs)) # log likelihood drawn from this distribution
+prob.dist.MLE <- exp(log.lik.dist.MLE) # probability drawn from this distribution
 
