@@ -1,4 +1,4 @@
-#Midterm
+# Midterm
 # The midterm is due Wednesday, October 25th at 11:15 am. Email the exam to eebbiometry@gmail.com. You need only send this single document (an R text document). Be sure that the code you provide can be run in R as is. Provide all the code used to carry out your analyses (e.g., tests for normality, plotting and tests used during exploratory data analysis, tests for collinearity, lack of fit (if required), diagnostics, etc.). Please annotate all your code so we can follow along step by step. Finally, remember that this is an exam; you are on the honor system to make this an INDIVIDUAL effort please.
 
 #Name: Matthew Tuttle
@@ -92,6 +92,7 @@ prob.mono <- (likelihood * prior) / observed # Probability a student with a sore
 
 
 ######################################################
+
 #4.  Here are some data on fish mouth gape and gill raker length. Based on this data, answer the following questions.
 
 gape.cm<-c(100.3, 97.2, 100.8, 105, 102, 101.1, 100, 105.6, 100.8, 102.5, 100.2, 105.5, 103.5, 98.6, 99.3, 98.9, 102.1, 97.7, 98.5, 99.4, 100.3, 100.1, 100.8, 101.2, 95.5, 99.3, 96.5, 97.8, 101.5, 100.4, 101.1, 95.6, 99.1, 95.5, 104.8, 102.4, 98, 101, 101.3, 103.4, 98.6, 98, 99.5, 96.7, 99.5, 100.4, 100.3, 96.2, 98.4)
@@ -133,6 +134,7 @@ covariance <- cov(gape.cm, gill.raker.length.mm, method = c("pearson"))
 
 
 ##################################################################
+
 #5. Below are data on total leaf lesions due to viral infection and average nectar volume of flowers (microliters) of deadly nightshade (Atropa belladona). We are interested in knowing whether the number of leaf lesions can predict nectar volume.
 
 #A. Make a pretty figure showing the data, your results, and the 95% confidence interval around the fitted values. Use these data to address the following questions.
@@ -199,6 +201,7 @@ lesions.upper.95.CI <- lesions.95.CI[3]
 
 
 ##################################################################
+
 #6. Below is data on a species of wild mustard. Leaf glucosinolate (ug/mg dry weight) and isothiocyanates (ug/mg dry weight) have been implicated in herbivore resistence. Leaf thickness (mm) is the average thickness of leaves based on the average of 10 randomly selected leaves. Using these data, answer the questions below.
 
 leaf.glucosinolate<-c(121.061,151.448,106.522,97.407,110.052,158.652,111.531,109.037,102.374,122.181,144.418,147.539,137.071,124.052,104.414,114.593,108.744,103.743,95.769,76.728,115.18,109.493,88.466,108.89,103.884,113.558,118.682,156.071,129.332,139.775,97.221,146.174,82.809,114.034,107.907,122.952,115.362,94.464,114.42,88.883,102.469,115.418,120.71,123.972,137.832,108.621,90.55,133.821,113.255,104.742,125.003,104.045,124.76,91.614,147.902,112.632,125.443,99.278,116.993,106.76,101.314,100.753,114.221,98.549,92.063,130.005,111.562,98.613,138.934,94.704,110.393,129.742,108.153,63.278,95.036,140.126,129.686,84.854,112.408,130.374,123.597,115.504,92.829,121.988,126.17,126.373,107.206,113.996,102.958,106.608,118.755,96.874,99.928,134.368,95.333,127.166,125.02,105.476,129.876,129.043)
@@ -223,52 +226,36 @@ normalTest(leaf.thickness, method = "da") # Is normal
 normalTest(isothiocyanates, method = "da") # Is normal
 normalTest(LAR, method = "da") # Is normal
 
-# Building models
-model1.1 <- lm(LAR ~ leaf.glucosinolate)
-model1.2 <- lm(LAR ~ leaf.thickness)
-model1.3 <- lm(LAR ~ isothiocyanates)
-model2.1 <- lm(LAR ~ leaf.glucosinolate + leaf.thickness)
-model2.2 <- lm(LAR ~ leaf.glucosinolate + isothiocyanates)
-model2.3 <- lm(LAR ~ leaf.thickness + isothiocyanates)
-model3.1 <- lm(LAR ~ leaf.glucosinolate + leaf.thickness + isothiocyanates)
+# Backward and forward stepwise model selection
+model.full <- lm(LAR ~ leaf.glucosinolate + leaf.thickness + isothiocyanates)
+model.back <- step(model.full, LAR ~ leaf.glucosinolate + leaf.thickness + isothiocyanates, direction = "backward")
+model.for <- step(lm(LAR ~ 1), scope = list(upper = model.full, lower = ~ 1), direction = "forward")
+summary(model.back)
+summary(model.for) # Same as model.back
 
-# Correlations
-x1x2 <- cor(leaf.glucosinolate, leaf.thickness)
-x1x3 <- cor(leaf.glucosinolate, isothiocyanates)
-x1y1 <- cor(leaf.glucosinolate, LAR)
-x2x3 <- cor(leaf.thickness, isothiocyanates)
-x2y1 <- cor(leaf.thickness, LAR)
-x3y1 <- cor(isothiocyanates, LAR)
+# The best predictive model based on the available data is a model of leaf area removed as a function of isothiocyanates and leaf thickness. Both the backward and forward model selections resulted in this model. Out of all of the possible models using this data, this model has the lowest AIC value (shown below) indicating that this is the best available model.
 
-# Summaries
-summary(model1.1)
-summary(model1.2)
-summary(model1.3)
-summary(model2.1)
-summary(model2.2)
-summary(model2.3)
-summary(model3.1)
-
-
-library(car)
-
-anova(model1.1)
-Anova(model1.1)
-
+# AICs of all possible models
+model1.1 <- lm(LAR ~ leaf.glucosinolate); AIC(model1.1)
+model1.2 <- lm(LAR ~ leaf.thickness); AIC(model1.2)
+model1.3 <- lm(LAR ~ isothiocyanates); AIC(model1.3)
+model2.1 <- lm(LAR ~ leaf.glucosinolate + leaf.thickness); AIC(model2.1)
+model2.2 <- lm(LAR ~ leaf.glucosinolate + isothiocyanates); AIC(model2.2)
+model2.3 <- lm(LAR ~ leaf.thickness + isothiocyanates); AIC(model2.3) # Lowest AIC value
+model3.1 <- lm(LAR ~ leaf.glucosinolate + leaf.thickness + isothiocyanates); AIC(model3.1)
 
 
 #B. Based on your model, what is the most important predictor for leaf area removed (and on what do you base this)?
 
-# isothiocyanates is the best predictor. Easily seen with graph, p-values are highly significant
+# The most important predictor for leaf area removed is isothiocyanates concentration. When selecting a model, isothiocyanates. The importance of isothiocyanates concentration is also obvious when you plot LAR as a function of isothiocyanates. There is a clear correlation between the two (see below), unlike LAR and either leaf.glucosinolate or leaf.thickness where the correlation is less obvious.
 
-
-
-
+# Plots to look at correlations
+plot(LAR ~ leaf.glucosinolate)
+plot(LAR ~ leaf.thickness)
+plot(LAR ~ isothiocyanates) # Clearest correlation able to be seen
 
 
 #################################################
-
-
 
 #7. Given the data y below, what is the probability AND log likelihood that the data are drawn from the following distributions?
 
