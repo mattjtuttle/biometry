@@ -27,11 +27,51 @@
 # Imports data
 algae_data <- read.csv(file = "Weekly_assignments/week11_in_class/AlgaeProject.csv", header = TRUE)
 
+
+# Adding structure to the error term and allowing for different intercepts
 library(lme4)
-mod <- lmer(Invasive.Algae.Mass ~ Location + Treatment + Water.Depth + Native.Algae.Mass + (1|Location) + (1|Treatment) + (1|Water.Depth) + (1|Native.Algae.Mass), data = algae_data)
 
-summary(mod)
+mod1 <- lmer(Invasive.Algae.Mass ~ Treatment + (1|Location), data = algae_data)
+summary(mod1)
 
+mod0 <- lmer(Invasive.Algae.Mass ~ (1|Location), data = algae_data)
+summary(mod0)
+anova(mod0, mod1) # Treatment has a significant effect, keep mod1
+
+# Allow for different slopes
+mod2 <- lmer(Invasive.Algae.Mass ~ Treatment + (1+Treatment|Location), data = algae_data)
+summary(mod2) # Corr = -0.16, will allow slope to vary
+anova(mod1, mod2) # keep mod1, lower AIC
+
+mod3 <- lmer(Invasive.Algae.Mass ~ Treatment * Water.Depth + (1+Water.Depth|Location), data = algae_data)
+summary(mod3) # Corr = -1, keep mod1
+
+mod4 <- lmer(Invasive.Algae.Mass ~ Treatment * Water.Depth + (1|Location), data = algae_data)
+summary(mod4)
+anova(mod1, mod4) # keep mod4, lower AIC
+
+mod5 <- lmer(Invasive.Algae.Mass ~ Treatment + Water.Depth + (1|Location), data = algae_data)
+summary(mod5)
+anova(mod4, mod5) # keep mod4, lower AIC
+
+mod6 <- lmer(Invasive.Algae.Mass ~ Treatment * Water.Depth * Native.Algae.Mass + (1+Native.Algae.Mass|Location), data = algae_data)
+summary(mod6) # Corr = -0.70, will allow slope to vary
+anova(mod4, mod6) # keep mod4, lower AIC
+
+mod7 <- lmer(Invasive.Algae.Mass ~ Treatment * Water.Depth + Native.Algae.Mass + (1|Location) + (1+Native.Algae.Mass|Location), data = algae_data)
+summary(mod7)
+anova(mod4, mod7) # keep mod4, lower AIC
+
+final.mod <- mod4 # To be used for hypothesis testing
+
+
+# Hypothesis testing:
+
+summary(final.mod)
 library(car)
-Anova(mod)
+Anova(final.mod)
 
+library(multcomp)
+tukey.hsd<-glht(final.mod,linfct=mcp(Treatment="Tukey")) #??????????????
+
+# Using the above generated statistical model, the _____
