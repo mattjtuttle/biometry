@@ -28,7 +28,7 @@
 algae_data <- read.csv(file = "Weekly_assignments/week11_in_class/AlgaeProject.csv", header = TRUE)
 
 
-# Adding structure to the error term and allowing for different intercepts
+# Adding structure to the error term and allowing for different intercepts using a mixed effects model
 library(lme4)
 
 mod1 <- lmer(Invasive.Algae.Mass ~ Treatment + (1|Location), data = algae_data)
@@ -65,13 +65,10 @@ anova(mod4, mod7) # keep mod4, lower AIC
 final.mod <- mod4 # To be used for hypothesis testing
 
 
-# Hypothesis testing:
-
-summary(final.mod)
-library(car)
-Anova(final.mod)
-
+# Hypothesis testing
 library(multcomp)
-tukey.hsd<-glht(final.mod,linfct=mcp(Treatment="Tukey")) #??????????????
+tukey.hsd<-glht(final.mod,linfct=mcp(Treatment="Tukey"))
+summary(tukey.hsd)
 
-# Using the above generated statistical model, the _____
+# Using the data at hand and the above generated statistical model, there does not appear to be an effect of parrotfish on invasive Macroalgae cover. Hypothesis testing indicated that difference between the caged vs non-caged treatments is zero with P-value <2e-16. 
+
